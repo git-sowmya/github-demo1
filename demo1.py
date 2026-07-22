@@ -1,4 +1,6 @@
 Starting git
 
 
-why it is not showing modified
+it should now modify
+
+its now working
