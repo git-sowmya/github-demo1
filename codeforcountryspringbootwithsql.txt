@@ -1,0 +1,249 @@
+//countrycontroller
+==================================
+
+package comcountryservice.demo.controllers;
+
+import java.util.List;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import comcountryservice.demo.beans.Country;
+import comcountryservice.demo.services.CountryService;
+//import comcountryservice.demo.controllers.AddResponse;
+
+@RestController
+public class CountryController 
+{
+
+	@Autowired//dependency injection
+	CountryService countryservice;
+
+	@GetMapping("/getcountries")
+	public List<Country> getCountries()
+	{
+		return countryservice.getAllCountries();
+	}
+	
+	@GetMapping("/getcountries/id/{id}")
+	public ResponseEntity<Country> getCountrybyID(@PathVariable(value="id") int id)
+	{
+		try
+		{
+			Country country = countryservice.getCountrybyID(id);
+			return new ResponseEntity<Country>(country,HttpStatus.OK);
+		}
+		catch(Exception e)
+		{
+			return new ResponseEntity<Country>(HttpStatus.NOT_FOUND);
+			
+		}
+	}
+	/*@GetMapping("/name/{name}")
+	public Country getCountryName(@RequestParam(value="name") String cname)
+	{
+		return countryservice.getCountrybyName(cname);		
+	}*/
+	
+	@GetMapping("/getcountries/name")
+	public ResponseEntity<Country> getCountrybyName(@RequestParam("name") String cname) 
+	{
+		try
+		{
+			Country country = countryservice.getCountrybyName(cname);
+			return new ResponseEntity<Country>(country,HttpStatus.OK);
+		}
+		catch(Exception e)
+		{
+			return new ResponseEntity<Country>(HttpStatus.NOT_FOUND);
+			
+		}
+	}
+	
+	@PostMapping("/adcountry")
+	public Country addCountry(@RequestBody Country addctr)
+	{
+		
+		return countryservice.addCountry(addctr);
+	}
+	@PutMapping("/updatecountry/{id}")
+	public ResponseEntity<Country> updateCountry(@PathVariable(value="id")Integer id,@RequestBody Country updctr)
+	{
+		try
+		{
+		Country existCountry = countryservice.getCountrybyID(id);
+		existCountry.setCountryName(updctr.getCountryName());
+		existCountry.setCountryCapital(updctr.getCountryCapital());
+		Country updatedcountry = countryservice.updateCountry(existCountry);
+		return new ResponseEntity<Country>(updatedcountry,HttpStatus.OK);
+		}
+		catch(Exception e)
+		{
+		
+			e.printStackTrace();  // 👈 THIS will show real problem
+			return new ResponseEntity<Country>(HttpStatus.CONFLICT);
+		}
+	}
+	@DeleteMapping("/deletecountry/{id}")
+	public AddResponse deleteCountry(@PathVariable(value="id") int id)
+	{
+		return  countryservice.deleteCountry(id);
+	}
+}
+
+
+countryservice
+==========================================
+package comcountryservice.demo.services;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+import comcountryservice.demo.beans.Country;
+import comcountryservice.demo.controllers.AddResponse;
+import comcountryservice.demo.repositories.CountryRepository;
+
+
+@Component
+@Service
+
+public class CountryService 
+{
+	@Autowired
+	CountryRepository countryrep;
+	
+	public List getAllCountries()
+	{
+		return countryrep.findAll();
+	}
+	
+	public Country getCountrybyID(int id)
+	{
+		return countryrep.findById(id).get();
+	}
+	
+	public Country getCountrybyName(String name)
+	{
+		List<Country> countries=countryrep.findAll();
+		Country country = null;
+		for(Country con:countries)
+		{
+			if(con.getCountryName().equalsIgnoreCase(name))
+					country=con;
+		}
+		return country;
+	}
+	
+
+	public Country addCountry(Country country)
+	{
+		country.setId(getMaxID());
+		countryrep.save(country);
+		return country;
+	}
+	
+	public int getMaxID()
+	{
+		 return countryrep.findAll().size()+1;
+	}
+	public Country updateCountry(Country country)
+	{
+		countryrep.save(country);
+		return country;
+	}
+	
+	public AddResponse deleteCountry(int id)
+	{
+		countryrep.deleteById(id);
+		AddResponse res = new AddResponse();
+		res.setMsg("Country deleted");
+		res.setId(id);
+		return res;
+	}
+}
+
+
+countrybean
+==========================================
+package comcountryservice.demo.beans;
+
+//import org.springframework.data.annotation.Id;
+
+import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+
+@Entity//representing a table
+
+@Table(name = "Country")
+public class Country 
+{
+	
+	@Id	//for primary key
+	@Column(name="id")
+	private Integer id;
+	
+	@Column(name="country_name")
+	private String countryName;
+	
+	@Column(name="capital")
+	private String countryCapital;
+	
+	public Country()
+	{
+		
+	}
+	public Country(Integer id,String countryName, String countryCapital)
+	{
+		this.id= id;
+		this.countryName = countryName;
+		this.countryCapital = countryCapital;
+		
+	}
+	public Integer getId() 
+	{
+		return id;
+	}
+	public void setId(Integer id) 
+	{
+		this.id = id;
+	}
+	public String getCountryName() 
+	{
+		return countryName;
+	}
+	public void setCountryName(String countryName)
+	{
+		this.countryName = countryName;
+	}
+	public String getCountryCapital() 
+	{
+		return countryCapital;
+	}
+	public void setCountryCapital(String countryCapital) 
+	{
+		this.countryCapital = countryCapital;
+	}
+
+	
+}
+
+
+
